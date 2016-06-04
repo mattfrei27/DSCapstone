@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Word Prediction</title>
+  <meta charset="utf-8">
+  <meta name="description" content="Word Prediction">
+  <meta name="author" content="Matt Frei">
+  <meta name="generator" content="slidify" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/default.css" media="all" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/phone.css" 
+    media="only screen and (max-device-width: 480px)" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/slidify.css" >
+  <link rel="stylesheet" href="libraries/highlighters/highlight.js/css/tomorrow.css" />
+  <base target="_blank"> <!-- This amazingness opens all links in a new tab. -->  <link rel=stylesheet href="./assets/css/ribbons.css"></link>
+
+  
+  <!-- Grab CDN jQuery, fall back to local if offline -->
+  <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.min.js"></script>
+  <script>window.jQuery || document.write('<script src="libraries/widgets/quiz/js/jquery.js"><\/script>')</script> 
+  <script data-main="libraries/frameworks/io2012/js/slides" 
+    src="libraries/frameworks/io2012/js/require-1.0.8.min.js">
+  </script>
+  
+  
+
+</head>
+<body style="opacity: 0">
+  <slides class="layout-widescreen">
+    
+    <!-- LOGO SLIDE -->
+        <slide class="title-slide segue nobackground">
+  <hgroup class="auto-fadein">
+    <h1>Word Prediction</h1>
+    <h2>Data Science Capstone</h2>
+    <p>Matt Frei<br/></p>
+  </hgroup>
+  <article></article>  
+</slide>
+    
+
+    <!-- SLIDES -->
+    <slide class="" id="slide-1" style="background:;">
+  <hgroup>
+    <h2>Summary</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>In the modern world, an ever increasing share of the world&#39;s population communicates by text entered on mobile phones. For many, typing on a tiny mobile keyboard is a source of irritation. That&#39;s why companies such as SwiftKey have worked to develop algorithms that predict the next word you will type. </p>
+
+<p>Here I present a simple word prediction algorithm of my own design.</p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-2" style="background:;">
+  <hgroup>
+    <h2>Data</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>The word prediction algorithm is built on a large corpus of English text from the following three sources:</p>
+
+<ol>
+<li><p>Blogs</p></li>
+<li><p>Tweets</p></li>
+<li><p>News Stories</p></li>
+</ol>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-3" style="background:;">
+  <hgroup>
+    <h2>Data Processing</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>The raw data required significant preprocessing before it could be used to build a predictive model. The following are the steps taken:</p>
+
+<ol>
+<li><p>Conversion to lower case</p></li>
+<li><p>Removal of punctuation and numbers</p></li>
+<li><p>Removal of offensive words (<a href="http://www.frontgatemedia.com/a-list-of-723-bad-words-to-blacklist-and-how-to-use-facebooks-moderation-tool/">List of profanities removed</a>)</p></li>
+<li><p>Random Sampling</p></li>
+<li><p>Tokenization into n-grams (consecutive sequences) of 1 to 4 words</p></li>
+</ol>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-4" style="background:;">
+  <hgroup>
+    <h2>Predictive Model</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>Word prediction is performed using a simple n-gram model. The employed algorithm ranks word based on the frequency with which they are encountered immediately following a given sequence of 0 to 3 words (the &#39;prefix&#39;). For example, suppose that the sequence &quot;I like to&quot; appears three times in the set of input text. If the next word is &quot;swim&quot; in one document and &quot;eat&quot; in the other two, the algorithm will rank eat as the more likely word to follow that prefix.</p>
+
+<p>If a given prefix never appears in the input text, the first word in the prefix is discarded until a previously encountered prefix is found. If the prefix consists of a single word only, the most frequently occuring word in the input text is predicted.</p>
+
+<p>Note that words appearing in fewer than 10 of the 600,000 documents sampled (200K from each of the three sources) have been removed.</p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-5" style="background:;">
+  <hgroup>
+    <h2>Interactive Application</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>The algorithm is available as an online <a href="https://mattfrei.shinyapps.io/DS_Capstone_Word_Predictor/">interactive tool</a>. Simply enter a few words in the first box and the algorithm will present you with words likely to follow those you entered.</p>
+
+<p>Note that this n-gram approach considers at maximum, only the three preceeding words. So, context appearing earlier in a sentence does not influence the prediction.</p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+    <slide class="backdrop"></slide>
+  </slides>
+  <div class="pagination pagination-small" id='io2012-ptoc' style="display:none;">
+    <ul>
+      <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=1 title='Summary'>
+         1
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=2 title='Data'>
+         2
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=3 title='Data Processing'>
+         3
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=4 title='Predictive Model'>
+         4
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=5 title='Interactive Application'>
+         5
+      </a>
+    </li>
+  </ul>
+  </div>  <!--[if IE]>
+    <script 
+      src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">  
+    </script>
+    <script>CFInstall.check({mode: 'overlay'});</script>
+  <![endif]-->
+</body>
+  <!-- Load Javascripts for Widgets -->
+  
+  <!-- LOAD HIGHLIGHTER JS FILES -->
+  <script src="libraries/highlighters/highlight.js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <!-- DONE LOADING HIGHLIGHTER JS FILES -->
+   
+  </html>
