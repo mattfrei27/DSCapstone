@@ -1,0 +1,172 @@
+---
+title: "Milestone Report 1"
+author: "Matt F"
+date: "Saturday, April 30, 2016"
+output: html_document
+---
+
+
+#Executive Summary
+
+The goal of this document is to perform simple exploratory analysis of the Coursera Data Science Capstone dataset from SwiftKey.   
+
+The data analyzed here can be downloaded from the [course website](https://eventing.coursera.org/api/redirectStrict/Hkh6HBGY1CoWVm_b0VEkXR5m_cnCyHh1aKVe_iswF1YWAzm8f2Q04v4NWPR4e0I11hH_EJFIsBgjjrpna33cPg.7tJNHJ_p36atO8nfrCHaOQ.GSrKJz2iekgfM5DChBlzZHp3zTYhO7ynBqbEg5uAIK1JSFYo9H_ub3GAr2Js_LFE20wir0oaX14SAtXaNJJyFX5yr-nra8hz0CY9DOd6f9qkmgmL5jeUIZBrA0XtbyxSHU_OHjV6tuXPLaX0wWxTyRoi9PLRL8jpTvzD-I51f4PzGDVuD3L6RmYYHU-WsMn9JOlnaF6Or16o8-PAMP1iri0UDXBzO4lTntVLTauvusvQQ02Y01njD4ivzKugGkRddtTDBAOQ4g95S6DdGB0Gk5-1YYwQHqdNKzSWFTXvUdV_J7Fk38uIKZMV2dk1kpA_jyjDLqC0TBi_Baizp4JMdKFfrtIuN2i4pJ0BmR_eD1rGeKfSUJu6M3k1t59_zLunjRkX9yPd9_tf2DsVUCLhnTjvDvVqgCueZR2bhNsOMQQ).
+
+
+#Data Preparation
+
+First, we load needed libraries.
+
+```{r lib, echo=FALSE, warning=FALSE, message=FALSE}
+setwd('Z:/Coursera DS Capstone')
+library(tm)
+library(ggplot2)
+library(ggthemes)
+library(slam)
+library(RWeka)
+```
+
+Next, we'll load the three sets of text into R.
+
+```{r load, cache = TRUE}
+blogs <- readLines('./data/en_US/en_US.blogs.txt',skipNul=TRUE)
+# There are substitue characters in the news corpus. Read them in raw/binary mode:
+news.con <- file('./data/en_US/en_US.news.txt','rb')
+news <- readLines(news.con)
+close(news.con)
+tweets <- readLines('./data/en_US/en_US.twitter.txt',skipNul=TRUE)
+```
+
+Let's take a look at the number of lines and characters in each file.
+
+```{r text_analysis}
+summary <- data.frame(row.names = c('Blogs','News','Tweets'),
+                        cbind(c(length(blogs),length(news),length(tweets)),
+                              c(sum(nchar(blogs)),sum(nchar(news)),sum(nchar(tweets)))))
+colnames(summary) <- c('Lines','Characters')
+summary
+```
+
+The computer used for this analysis won't handle this much data at once so we'll take a random subset (a sample) and load it into a single body (known as a corpus).
+
+```{r corpus, cache = TRUE}
+set.seed(98324154)
+blogs.sample <- sample(blogs,10000)
+news.sample <- sample(news,10000)
+tweets.sample <- sample(tweets,10000)
+
+
+blogs.corpus <- VCorpus(VectorSource(blogs.sample))
+meta(blogs.corpus,'source') <- 'Blogs'
+news.corpus <- VCorpus(VectorSource(news.sample))
+meta(news.corpus,'source') <- 'News'
+tweets.corpus <- VCorpus(VectorSource(tweets.sample))
+meta(tweets.corpus,'source') <- 'Tweets'
+
+corpus <- c(blogs.corpus,news.corpus,tweets.corpus)
+```
+
+Next, we'll remove excess white space, convert all characters to lower case, remove punctation and numbers, and finally remove profanity. 
+
+```{r transform, cache = TRUE}
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, stripWhitespace)
+corpus <- tm_map(corpus, removePunctuation) 
+corpus <- tm_map(corpus, removeNumbers) 
+# List of profane words taken from: http://www.frontgatemedia.com/a-list-of-723-bad-words-to-blacklist-and-how-to-use-facebooks-moderation-tool/
+profanity <- read.csv('Terms-to-Block.csv',header = FALSE, skip=4,col.names=c('junk','words'))
+profanity$words <- gsub(',','',profanity$words)
+corpus <- tm_map(corpus, removeWords, profanity$words)
+```
+
+#Tokenization
+
+Create a separate Document-Term Matrix for individuals words (unigrams) as well as for sets of two (bigrams) and three (trigrams) consecutive words. These matrices store the number of times that each word or set of consecutive words (known as n-grams) appear across the sampled documents. 
+
+```{r tokens, cache = TRUE}
+uniGramTok <- function(x) NGramTokenizer(x, Weka_control(min = 1, max = 1))
+biGramTok <- function(x) NGramTokenizer(x, Weka_control(min = 2, max = 2))
+triGramTok <- function(x) NGramTokenizer(x, Weka_control(min = 3, max = 3))
+
+unigrams <- DocumentTermMatrix(corpus, control = list(tokenize = uniGramTok))
+bigrams <- DocumentTermMatrix(corpus, control = list(tokenize = biGramTok))
+trigrams <- DocumentTermMatrix(corpus, control = list(tokenize = triGramTok))
+```
+
+
+#Exploratory Analysis
+
+Here are the number of unique words (unigrams), bigrams, and trigrams:
+
+```{r counts, echo=FALSE, cached=TRUE}
+uniqueCounts <- data.frame(unigrams = unigrams$ncol, bigrams = bigrams$ncol, trigrams = trigrams$ncol)
+uniqueCounts
+```
+
+As one would expect, the distribution of word counts is extremely skewed; meaning that there are very few words appearing many times and many words appearing only a handful of times.
+
+```{r hist, cache = TRUE}
+rs <- slam::row_sums(unigrams,na.rm=TRUE)
+hist(rs, main = "Distribution of Word Counts",
+                  xlab = 'Number of words')
+```
+
+Here are the most frequently occuring n-grams of each size:
+
+```{r most.freq, cache = TRUE}
+
+freq.words <- findFreqTerms(unigrams, 2500)
+rs <- slam::col_sums(unigrams[,freq.words],na.rm=TRUE)
+unigram.freq <- data.frame(unigram=freq.words, frequency=rs)
+
+ggplot(unigram.freq, aes(x=reorder(unigram, frequency), y=frequency)) +
+  geom_bar(stat = "identity",fill='#990000') +
+  coord_flip() +
+  xlab("Unigram") +
+  ylab("Frequency") +
+  labs(title = "Top Unigrams by Frequency") +
+  theme_solarized(light = FALSE) +
+  theme(axis.text=element_text(size=12),
+        title=element_text(size=14,face="bold")
+       )
+
+
+freq.bigrams <- findFreqTerms(bigrams, 700)
+rs.bi <- slam::col_sums(bigrams[,freq.bigrams],na.rm=TRUE)
+bigram.freq <- data.frame(bigram=freq.bigrams, frequency=rs.bi)
+
+ggplot(bigram.freq, aes(x=reorder(bigram, frequency), y=frequency)) +
+  geom_bar(stat = "identity",fill='#990000') +
+  coord_flip() +
+  xlab("Bigram") +
+  ylab("Frequency") +
+  labs(title = "Top Bigrams by Frequency") +
+  theme_solarized(light = FALSE) +
+  theme(axis.text=element_text(size=12),
+        title=element_text(size=14,face="bold")
+       )
+
+freq.trigrams <- findFreqTerms(trigrams, 90)
+rs.tri <- slam::col_sums(trigrams[,freq.trigrams],na.rm=TRUE)
+trigram.freq <- data.frame(trigrams=freq.trigrams, frequency=rs.tri)
+
+ggplot(trigram.freq, aes(x=reorder(trigrams, frequency), y=frequency)) +
+  geom_bar(stat = "identity",fill='#990000') +
+  coord_flip() +
+  xlab("Trigram") +
+  ylab("Frequency") +
+  labs(title = "Top Trigrams by Frequency") +
+  theme_solarized(light = FALSE) +
+  theme(axis.text=element_text(size=12),
+        title=element_text(size=14,face="bold")
+       )
+```
+
+# Future plans
+
+The next step for this analysis is to build a tool that can use words typed into a keyboard to predict the next word the user is likely to type. I plan to do so by:
+
+1. Building a table that shows the count probabilty that a given word will appear after any other word and then repeating this process for sets of two and three consercutive words (bigrams and trigrams)
+2. Implementing a 'smoothing' process that will assign a small but non-zero probability to any word not seen in the dataset
+3. Building a Shiny app that takes in user input and searches the tables for the most likely next word
+4. Making necessary modifications to ensure the algorithm is efficient enough to provide a good user experience
